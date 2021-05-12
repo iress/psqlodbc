@@ -27,7 +27,9 @@
     automatically unless this option is specified.  Currently "4.0",
     "12.0" or "14.0" is available.
 .PARAMETER Configuration
-    Specify "Release"(default) or "Debug".
+    Specify the configuration used to build the regression tests. "Release"(default) or "Debug".
+.PARAMETER DriverConfiguration
+    Specify the configuration of the driver to test. "Release"(default) or "Debug".
 .PARAMETER BuildConfigPath
     Specify the configuration xml file name if you want to use
     the configuration file other than standard one.
@@ -74,6 +76,7 @@ Param(
 [string]$MSToolsVersion,
 [ValidateSet("Debug", "Release")]
 [String]$Configuration="Release",
+[String]$DriverConfiguration="Release",
 [string]$BuildConfigPath,
 [ValidateSet("off", "on", "both")]
 [string]$DeclareFetch="on",
@@ -263,7 +266,7 @@ function SpecialDsn($testdsn, $testdriver)
 			$uid = $in
 		}
 		$in = read-host -assecurestring "Password [$passwd]"
-		if ("$in" -ne "") {
+		if ($in.Length -ne 0) {
 			$ptr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($in)
 			$passwd = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
 		}
@@ -394,12 +397,12 @@ foreach ($pl in $pary) {
 	 "Win32" {
 			$targetdir="test_x86"
 			$bit="32-bit"
-			$dlldir="$objbase\x86_${ansi_dir_part}_Release"
+			$dlldir="$objbase\x86_${ansi_dir_part}_$DriverConfiguration"
 		}
 	 default {
 			$targetdir="test_x64"
 			$bit="64-bit"
-			$dlldir="$objbase\x64_${ansi_dir_part}_Release"
+			$dlldir="$objbase\x64_${ansi_dir_part}_$DriverConfiguration"
 		}
 	}
 	pushd $pushdir\$targetdir
