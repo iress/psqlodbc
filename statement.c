@@ -57,6 +57,9 @@ static const struct
 		STMT_TYPE_DELETE, "DELETE"
 	}
 	,{
+		STMT_TYPE_PROCCALL, "CALL"
+	}
+	,{
 		STMT_TYPE_PROCCALL, "{"
 	}
 	,{
@@ -2235,84 +2238,110 @@ MYLOG(DETAIL_LOG_LEVEL, "!!%p->miscinfo=%x res=%p\n", self, self->miscinfo, firs
 	if (NULL == SC_get_Curres(self))
 		SC_set_Curres(self, SC_get_Result(self));
 
-	ipdopts = SC_get_IPDF(self);
-	has_out_para = FALSE;
 	if (self->statement_type == STMT_TYPE_PROCCALL &&
 		(SC_get_errornumber(self) == STMT_OK ||
 		 SC_get_errornumber(self) == STMT_INFO_ONLY))
 	{
 		Int2	io, out;
 		has_out_para = (CountParameters(self, NULL, &io, &out) > 0);
-/*
- *	I'm not sure if the following REFCUR_SUPPORT stuff is valuable
- *	or not.
- */
-#ifdef	REFCUR_SUPPORT
+		if (has_out_para)
+		{	/* get the return value of the procedure call */
+			RETCODE		ret;
+			HSTMT		hstmt = (HSTMT) self;
 
-MYLOG(DETAIL_LOG_LEVEL, "!!! numfield=%d field_type=%u\n", QR_NumResultCols(res), QR_get_field_type(res, 0));
-		if (!has_out_para &&
-		    0 < QR_NumResultCols(res) &&
-		    PG_TYPE_REFCURSOR == QR_get_field_type(res, 0))
-		{
-			char	fetch[128];
-			int	stmt_type = self->statement_type;
-
-			STR_TO_NAME(self->cursor_name, QR_get_value_backend_text(res, 0, 0));
-			QR_Destructor(res);
-			SC_init_Result(self);
-			SC_set_fetchcursor(self);
-			qi.result_in = NULL;
-			qi.cursor = SC_cursor_name(self);
-			qi.cache_size = qi.row_size = ci->drivers.fetch_max;
-			SPRINTF_FIXED(fetch, "fetch " FORMAT_LEN " in \"%s\"", qi.fetch_size, SC_cursor_name(self));
-			res = CC_send_query(conn, fetch, &qi, qflag | READ_ONLY_QUERY, SC_get_ancestor(self));
-			if (NULL != res)
-				SC_set_Result(self, res);
-		}
-#endif	/* REFCUR_SUPPORT */
-	}
-	if (has_out_para)
-	{	/* get the return value of the procedure call */
-		RETCODE		ret;
-		HSTMT		hstmt = (HSTMT) self;
-
-		self->bind_row = 0;
-		ret = SC_fetch(hstmt);
+			ipdopts = SC_get_IPDF(self);
+			self->bind_row = 0;
+			ret = SC_fetch(hstmt);
 MYLOG(DETAIL_LOG_LEVEL, "!!SC_fetch return =%d\n", ret);
-		if (SQL_SUCCEEDED(ret))
-		{
-			APDFields	*apdopts = SC_get_APDF(self);
-			SQLULEN		offset = apdopts->param_offset_ptr ? *apdopts->param_offset_ptr : 0;
-			ARDFields	*ardopts = SC_get_ARDF(self);
-			const ParameterInfoClass	*apara;
-			const ParameterImplClass	*ipara;
-			int	save_bind_size = ardopts->bind_size, gidx, num_p;
-
-			ardopts->bind_size = apdopts->param_bind_type;
-			num_p = self->num_params;
-			if (ipdopts->allocated < num_p)
-				num_p = ipdopts->allocated;
-			for (i = 0, gidx = 0; i < num_p; i++)
+			if (SQL_SUCCEEDED(ret))
 			{
-				ipara = ipdopts->parameters + i;
-				if (ipara->paramType == SQL_PARAM_OUTPUT ||
-				    ipara->paramType == SQL_PARAM_INPUT_OUTPUT)
+				APDFields	*apdopts = SC_get_APDF(self);
+				SQLULEN		offset = apdopts->param_offset_ptr ? *apdopts->param_offset_ptr : 0;
+				ARDFields	*ardopts = SC_get_ARDF(self);
+				const ParameterInfoClass	*apara;
+				const ParameterImplClass	*ipara;
+				int	save_bind_size = ardopts->bind_size, gidx, num_p;
+
+				ardopts->bind_size = apdopts->param_bind_type;
+				num_p = self->num_params;
+				if (ipdopts->allocated < num_p)
+					num_p = ipdopts->allocated;
+				for (i = 0, gidx = 0; i < num_p; i++)
 				{
-					apara = apdopts->parameters + i;
-					ret = PGAPI_GetData(hstmt, gidx + 1, apara->CType, apara->buffer + offset, apara->buflen, apara->used ? LENADDR_SHIFT(apara->used, offset) : NULL);
-					if (!SQL_SUCCEEDED(ret))
+					ipara = ipdopts->parameters + i;
+					if (ipara->paramType == SQL_PARAM_OUTPUT ||
+					    ipara->paramType == SQL_PARAM_INPUT_OUTPUT)
 					{
-						SC_set_error(self, STMT_EXEC_ERROR, "GetData to Procedure return failed.", func);
+						apara = apdopts->parameters + i;
+						ret = PGAPI_GetData(hstmt, gidx + 1, apara->CType, apara->buffer + offset, apara->buflen, apara->used ? LENADDR_SHIFT(apara->used, offset) : NULL);
+						if (!SQL_SUCCEEDED(ret))
+						{
+							SC_set_error(self, STMT_EXEC_ERROR, "GetData to Procedure return failed.", func);
+							break;
+						}
+						gidx++;
+					}
+				}
+				ardopts->bind_size = save_bind_size; /* restore */
+			}
+			else
+			{
+				SC_set_error(self, STMT_EXEC_ERROR, "SC_fetch to get a Procedure return failed.", func);
+			}
+		}
+
+		if (ci->fetch_refcursors)
+		{
+			char			fetch[128];
+			QResultClass 	*last = NULL, *res;
+
+			/* Iterate the columns in the result to look for refcursors */
+			numcols = QR_NumResultCols(rhold.first);
+			for (i = 0; i < numcols; i++)
+			{
+				MYLOG(DETAIL_LOG_LEVEL, "!!! numfield=%d field_type=%u\n", numcols, QR_get_field_type(rhold.first, i));
+				if (PG_TYPE_REFCURSOR == QR_get_field_type(rhold.first, i))
+				{
+					if (!CC_is_in_trans(conn))
+					{
+						SC_set_error(self, STMT_EXEC_ERROR, "Query must be executed in a transaction when FetchRefcursors setting is enabled.", func);
 						break;
 					}
-					gidx++;
+
+					STR_TO_NAME(self->cursor_name, QR_get_value_backend_text(rhold.first, 0, i));
+					SC_set_fetchcursor(self);
+					qi.result_in = NULL;
+					qi.cursor = SC_cursor_name(self);
+					qi.fetch_size = qi.row_size = ci->drivers.fetch_max;
+					SPRINTF_FIXED(fetch, "fetch " FORMAT_LEN " in \"%s\"", qi.fetch_size, SC_cursor_name(self));
+					res = CC_send_query(conn, fetch, &qi, qflag | READ_ONLY_QUERY, SC_get_ancestor(self));
+					if (NULL != res)
+					{
+						if (NULL == last)
+						{
+							/* Reinitialise with result fetched from first refcursor */
+							SC_init_Result(self);
+							SC_set_Result(self, res);
+						}
+						else
+						{
+							/* Add another result fetched from the next refcursor */
+							QR_concat(last, res);
+							self->multi_statement = TRUE;
+						}
+						if (!QR_command_maybe_successful(res))
+						{
+							SC_set_errorinfo(self, res, 0);
+							QR_Destructor(rhold.first);
+							break;
+						}
+
+						last = res;
+					}
 				}
 			}
-			ardopts->bind_size = save_bind_size; /* restore */
-		}
-		else
-		{
-			SC_set_error(self, STMT_EXEC_ERROR, "SC_fetch to get a Procedure return failed.", func);
+			if (last)
+				QR_Destructor(rhold.first);
 		}
 	}
 cleanup:
