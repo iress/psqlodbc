@@ -79,7 +79,7 @@ main(int argc, char **argv)
 	 * to get the OID in output, and this information looks to be
 	 * enough.
 	 */
-	print_result_series(hstmt, sql_column_ids, 6, -1);
+	print_result_series(hstmt, sql_column_ids, 6, -1, FALSE);
 	rc = SQLFreeStmt(hstmt, SQL_CLOSE);
 	CHECK_STMT_RESULT(rc, "SQLFreeStmt failed", hstmt);
 
@@ -187,7 +187,7 @@ main(int argc, char **argv)
 				 (SQLCHAR *) "set_byte", SQL_NTS,
 				 NULL, 0);
 	CHECK_STMT_RESULT(rc, "SQLProcedureColumns failed", hstmt);
-	print_result_series(hstmt, sql_pro_column_ids, sizeof(sql_pro_column_ids) / sizeof(sql_pro_column_ids[0]), -1);
+	print_result_series(hstmt, sql_pro_column_ids, sizeof(sql_pro_column_ids) / sizeof(sql_pro_column_ids[0]), -1, FALSE);
 	rc = SQLFreeStmt(hstmt, SQL_CLOSE);
 	CHECK_STMT_RESULT(rc, "SQLFreeStmt failed", hstmt);
 	/*
@@ -199,7 +199,7 @@ main(int argc, char **argv)
 				 (SQLCHAR *) "getfoo", SQL_NTS,
 				 NULL, 0);
 	CHECK_STMT_RESULT(rc, "SQLProcedureColumns failed", hstmt);
-	print_result_series(hstmt, sql_pro_column_ids, sizeof(sql_pro_column_ids) / sizeof(sql_pro_column_ids[0]), -1);
+	print_result_series(hstmt, sql_pro_column_ids, sizeof(sql_pro_column_ids) / sizeof(sql_pro_column_ids[0]), -1, FALSE);
 	rc = SQLFreeStmt(hstmt, SQL_CLOSE);
 	CHECK_STMT_RESULT(rc, "SQLFreeStmt failed", hstmt);
 	/*
@@ -211,7 +211,7 @@ main(int argc, char **argv)
 				 (SQLCHAR *) "getboo", SQL_NTS,
 				 NULL, 0);
 	CHECK_STMT_RESULT(rc, "SQLProcedureColumns failed", hstmt);
-	print_result_series(hstmt, sql_pro_column_ids, sizeof(sql_pro_column_ids) / sizeof(sql_pro_column_ids[0]), -1);
+	print_result_series(hstmt, sql_pro_column_ids, sizeof(sql_pro_column_ids) / sizeof(sql_pro_column_ids[0]), -1, FALSE);
 	rc = SQLFreeStmt(hstmt, SQL_CLOSE);
 	CHECK_STMT_RESULT(rc, "SQLFreeStmt failed", hstmt);
 	/*
@@ -223,7 +223,7 @@ main(int argc, char **argv)
 				 (SQLCHAR *) "tbl_arg", SQL_NTS,
 				 NULL, 0);
 	CHECK_STMT_RESULT(rc, "SQLProcedureColumns failed", hstmt);
-	print_result_series(hstmt, sql_pro_column_ids, sizeof(sql_pro_column_ids) / sizeof(sql_pro_column_ids[0]), -1);
+	print_result_series(hstmt, sql_pro_column_ids, sizeof(sql_pro_column_ids) / sizeof(sql_pro_column_ids[0]), -1, FALSE);
 	rc = SQLFreeStmt(hstmt, SQL_CLOSE);
 	CHECK_STMT_RESULT(rc, "SQLFreeStmt failed", hstmt);
 	/*
@@ -236,7 +236,7 @@ main(int argc, char **argv)
 				 (SQLCHAR *) "set_of", SQL_NTS,
 				 NULL, 0);
 	CHECK_STMT_RESULT(rc, "SQLProcedureColumns failed", hstmt);
-	print_result_series(hstmt, sql_pro_column_ids, sizeof(sql_pro_column_ids) / sizeof(sql_pro_column_ids[0]), -1);
+	print_result_series(hstmt, sql_pro_column_ids, sizeof(sql_pro_column_ids) / sizeof(sql_pro_column_ids[0]), -1, FALSE);
 	rc = SQLFreeStmt(hstmt, SQL_CLOSE);
 	CHECK_STMT_RESULT(rc, "SQLFreeStmt failed", hstmt);
 
@@ -248,7 +248,7 @@ main(int argc, char **argv)
 							(SQLCHAR *) "testtab1", SQL_NTS);
 	CHECK_STMT_RESULT(rc, "SQLTablePrivileges failed", hstmt);
 	print_result_meta(hstmt);
-	print_result_series(hstmt, sql_tab_privileges_ids, 6, 5);
+	print_result_series(hstmt, sql_tab_privileges_ids, 6, 5, FALSE);
 	rc = SQLFreeStmt(hstmt, SQL_CLOSE);
 	CHECK_STMT_RESULT(rc, "SQLFreeStmt failed", hstmt);
 
