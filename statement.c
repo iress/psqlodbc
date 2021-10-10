@@ -2319,6 +2319,10 @@ MYLOG(DETAIL_LOG_LEVEL, "!!SC_fetch return =%d\n", ret);
 					}
 
 					STR_TO_NAME(self->cursor_name, QR_get_value_backend_text(rhold.first, 0, i));
+					/* Skip NULL refcursors to support a variable number of results */
+					if (!SC_cursor_is_valid(self))
+						continue;
+
 					SC_set_fetchcursor(self);
 					qi.result_in = NULL;
 					qi.cursor = SC_cursor_name(self);
@@ -2339,17 +2343,16 @@ MYLOG(DETAIL_LOG_LEVEL, "!!SC_fetch return =%d\n", ret);
 							QR_concat(last, res);
 							self->multi_statement = TRUE;
 						}
+						last = res;
 						if (!QR_command_maybe_successful(res))
 						{
 							SC_set_errorinfo(self, res, 0);
-							QR_Destructor(rhold.first);
 							break;
 						}
-
-						last = res;
 					}
 				}
 			}
+			/* Discard original result */
 			if (last)
 				QR_Destructor(rhold.first);
 		}
