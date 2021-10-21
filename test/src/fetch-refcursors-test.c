@@ -33,15 +33,18 @@ static void setup_procedure()
 	CHECK_CONN_RESULT(rc, "failed to allocate stmt handle", conn);
 
 	rc = SQLExecDirect(hstmt, "create or replace procedure refproc"
-			"(multi_result boolean, inout num_cursor integer, inout ref1 refcursor default 'ref1', inout ref2 refcursor default null) as "
+			"(inout num_cursor integer, inout ref1 refcursor default null, inout ref2 refcursor default null) as "
 			"$procedure$ \n"
 			"DECLARE \n"
 			"BEGIN \n"
-			"num_cursor := 1; \n"
-			"OPEN ref1 FOR SELECT id, t FROM testtab1 ORDER BY id ASC; \n"
-			"IF multi_result THEN \n"
-			"    num_cursor := num_cursor + 1; \n"
+			"IF num_cursor > 0 THEN \n"
+			"    OPEN ref1 FOR SELECT id, t FROM testtab1 ORDER BY id ASC; \n"
+			"END IF; \n"
+			"IF num_cursor > 1 THEN \n"
 			"    OPEN ref2 FOR SELECT t, id FROM testtab1 ORDER BY id DESC; \n"
+			"END IF; \n"
+			"IF num_cursor > 2 THEN \n"
+			"    num_cursor := 2; \n"
 			"END IF; \n"
 			"END; \n"
 			"$procedure$ \n"
@@ -55,14 +58,13 @@ static void setup_procedure()
 	test_disconnect();
 }
 
-static void refcursor_test(char* connectparams, SQLUINTEGER autocommit, BOOL multiple)
+static void refcursor_test(char* connectparams, SQLUINTEGER autocommit, int numresults)
 {
 	SQLRETURN	rc;
 	HSTMT		hstmt = SQL_NULL_HSTMT;
-	BOOL		multi_result = multiple;
-	int	        num_cursor = 0;
+	int	        num_cursor = numresults;
 
-	printf("\n-- TEST using %s, autocommit=%u, multiple=%d\n", connectparams, autocommit, multiple);
+	printf("\n-- TEST using %s, autocommit=%u, numresults=%d\n", connectparams, autocommit, numresults);
 
 	test_connect_ext(connectparams);
 
@@ -73,20 +75,10 @@ static void refcursor_test(char* connectparams, SQLUINTEGER autocommit, BOOL mul
 	rc = SQLAllocHandle(SQL_HANDLE_STMT, conn, &hstmt);
 	CHECK_CONN_RESULT(rc, "failed to allocate stmt handle", conn);
 
-	rc = SQLPrepare(hstmt, "CALL refproc(?, ?)", SQL_NTS);
+	rc = SQLPrepare(hstmt, "CALL refproc(?)", SQL_NTS);
 	CHECK_STMT_RESULT(rc, "SQLPrepare failed", hstmt);
 
-	rc = SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT,
-						  SQL_C_BIT,	/* value type */
-						  SQL_BIT,		/* param type */
-						  0,			/* column size */
-						  0,			/* dec digits */
-						  &multi_result,/* param value ptr */
-						  0,	        /* buffer len */
-						  NULL		    /* StrLen_or_IndPtr */);
-	CHECK_STMT_RESULT(rc, "SQLBindParameter failed", hstmt);
-
-	rc = SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT_OUTPUT,
+	rc = SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT_OUTPUT,
 						  SQL_C_LONG,	/* value type */
 						  SQL_INTEGER,	/* param type */
 						  0,			/* column size */
@@ -116,10 +108,12 @@ int main(int argc, char **argv)
 {
 	setup_procedure();
 
-	refcursor_test("FetchRefcursors=0", SQL_AUTOCOMMIT_ON, TRUE);
-	refcursor_test("FetchRefcursors=1", SQL_AUTOCOMMIT_ON, TRUE);
-	refcursor_test("FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, TRUE);
-	refcursor_test("FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, FALSE);
+	refcursor_test("FetchRefcursors=0", SQL_AUTOCOMMIT_ON, 2);
+	refcursor_test("FetchRefcursors=1", SQL_AUTOCOMMIT_ON, 2);
+	refcursor_test("FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, 0);
+	refcursor_test("FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, 1);
+	refcursor_test("FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, 2);
+	refcursor_test("FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, 3);
 
 	return 0;
 }
