@@ -108,12 +108,12 @@ int main(int argc, char **argv)
 {
 	setup_procedure();
 
-	refcursor_test("FetchRefcursors=0", SQL_AUTOCOMMIT_ON, 2);
-	refcursor_test("FetchRefcursors=1", SQL_AUTOCOMMIT_ON, 2);
-	refcursor_test("FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, 0);
-	refcursor_test("FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, 1);
-	refcursor_test("FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, 2);
-	refcursor_test("FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, 3);
+	refcursor_test("Fetch=1;FetchRefcursors=0", SQL_AUTOCOMMIT_ON, 2);
+	refcursor_test("Fetch=1;FetchRefcursors=1", SQL_AUTOCOMMIT_ON, 2);
+	refcursor_test("Fetch=1;FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, 0);
+	refcursor_test("Fetch=1;FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, 1);
+	refcursor_test("Fetch=1;FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, 2);
+	refcursor_test("Fetch=1;FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, 3);
 
 	return 0;
 }

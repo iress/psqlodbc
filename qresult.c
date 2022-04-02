@@ -99,14 +99,22 @@ QR_set_cursor(QResultClass *self, const char *name)
 	}
 	else
 	{
-		QResultClass *res;
-
 		self->cursor_name = NULL;
-		for (res = QR_nextr(self); NULL != res; res = QR_nextr(res))
+		
+		/*
+		* Free other cursors for SQL Server only, so refcursors do not get freed
+		* prematurely. See commit c07342d22d82ea6293d27057840babfc2ff6d750.
+		*/
+		if (isSqlServr())
 		{
-			if (NULL != res->cursor_name)
-				free(res->cursor_name);
-			res->cursor_name = NULL;
+			QResultClass *res;
+
+			for (res = QR_nextr(self); NULL != res; res = QR_nextr(res))
+			{
+				if (NULL != res->cursor_name)
+					free(res->cursor_name);
+				res->cursor_name = NULL;
+			}
 		}
 	}
 }
