@@ -24,22 +24,8 @@
 #endif
 #include "version.h"
 
-#ifdef	WIN32
-#ifdef	_DEBUG
-#ifndef	_MEMORY_DEBUG_
 #include <stdlib.h>
-#if (_MSC_VER < 1400) /* in case of VC7 or under */
-#include <malloc.h>
-#endif /* _MSC_VER */
-#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
-#endif /* _MEMORY_DEBUG_ */
-#else  /* _DEBUG */
-#include <stdlib.h>
-#endif /* _DEBUG */
-#else  /* WIN32 */
-#include <stdlib.h>
-#endif /* WIN32 */
+#include <mimalloc.h>
 
 #ifdef  __INCLUDE_POSTGRES_FE_H__ /* currently not defined */
 /*
@@ -86,7 +72,17 @@ void		debug_memory_check(void);
 /* #define strncpy_null	pgdebug_strncpy_null */
 #define memcpy	pgdebug_memcpy
 #define memset	pgdebug_memset
+#else   /* _MEMORY_DEBUG_ */
+#ifdef	WIN32
+#undef strdup
+#endif /* WIN32 */
+#define malloc	mi_malloc
+#define realloc mi_realloc
+#define calloc	mi_calloc
+#define strdup	mi_strdup
+#define free	mi_free
 #endif   /* _MEMORY_DEBUG_ */
+
 
 #ifdef	WIN32
 #include <delayimp.h>

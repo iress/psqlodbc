@@ -1,15 +1,6 @@
 #undef	_MEMORY_DEBUG_
 #include	"psqlodbc.h"
 
-#ifdef	WIN32
-#ifdef	_DEBUG
-/* #include	<stdlib.h> */
-#define	_CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
-#else
-#include	<malloc.h>
-#endif /* _DEBUG */
-#endif /* WIN32 */
 #include	<string.h>
 
 #include	"misc.h"
@@ -26,20 +17,20 @@ CSTR	ALCERR	= "alcerr";
 void * pgdebug_alloc(size_t size)
 {
 	void * alloced;
-	alloced = malloc(size);
+	alloced = mi_malloc(size);
 MYLOG(2, " alloced=%p(" FORMAT_SIZE_T ")\n", alloced, size);
 	if (alloced)
 	{
 		if (!alsize)
 		{
 			alsize = 100;
-			altbl = (ALADR *) malloc(alsize * sizeof(ALADR));
+			altbl = (ALADR *) mi_malloc(alsize * sizeof(ALADR));
 		}
 		else if (tbsize >= alsize)
 		{
 			ALADR *al;
 			alsize *= 2;
-			if (al = (ALADR *) realloc(altbl, alsize * sizeof(ALADR)), NULL == al)
+			if (al = (ALADR *) mi_realloc(altbl, alsize * sizeof(ALADR)), NULL == al)
 				return alloced;
 			altbl = al;
 		}
@@ -53,20 +44,20 @@ MYLOG(2, " alloced=%p(" FORMAT_SIZE_T ")\n", alloced, size);
 }
 void * pgdebug_calloc(size_t n, size_t size)
 {
-	void * alloced = calloc(n, size);
+	void * alloced = mi_calloc(n, size);
 
 	if (alloced)
 	{
 		if (!alsize)
 		{
 			alsize = 100;
-			altbl = (ALADR *) malloc(alsize * sizeof(ALADR));
+			altbl = (ALADR *) mi_malloc(alsize * sizeof(ALADR));
 		}
 		else if (tbsize >= alsize)
 		{
 			ALADR *al;
 			alsize *= 2;
-			if (al = (ALADR *) realloc(altbl, alsize * sizeof(ALADR)), NULL == al)
+			if (al = (ALADR *) mi_realloc(altbl, alsize * sizeof(ALADR)), NULL == al)
 				return alloced;
 			altbl = al;
 		}
@@ -85,7 +76,7 @@ void * pgdebug_realloc(void * ptr, size_t size)
 
 	if (!ptr)
 		return pgdebug_alloc(size);
-	alloced = realloc(ptr, size);
+	alloced = mi_realloc(ptr, size);
 	if (!alloced)
 	{
 		MYLOG(0, "%s %p error\n", ALCERR, ptr);
@@ -109,7 +100,7 @@ void * pgdebug_realloc(void * ptr, size_t size)
 }
 char * pgdebug_strdup(const char * ptr)
 {
-	char * alloced = strdup(ptr);
+	char * alloced = mi_strdup(ptr);
 	if (!alloced)
 	{
 		MYLOG(0, "%s %p error\n", ALCERR, ptr);
@@ -119,13 +110,13 @@ char * pgdebug_strdup(const char * ptr)
 		if (!alsize)
 		{
 			alsize = 100;
-			altbl = (ALADR *) malloc(alsize * sizeof(ALADR));
+			altbl = (ALADR *) mi_malloc(alsize * sizeof(ALADR));
 		}
 		else if (tbsize >= alsize)
 		{
 			ALADR *al;
 			alsize *= 2;
-			if (al = (ALADR *) realloc(altbl, alsize * sizeof(ALADR)), NULL == al)
+			if (al = (ALADR *) mi_realloc(altbl, alsize * sizeof(ALADR)), NULL == al)
 				return alloced;
 			altbl = al;
 		}
@@ -168,7 +159,7 @@ void pgdebug_free(void * ptr)
 	}
 	else
 		MYLOG(2, "ptr=%p\n", ptr);
-	free(ptr);
+	mi_free(ptr);
 }
 
 static BOOL out_check(void *out, size_t len, const char *name)
@@ -253,7 +244,7 @@ void debug_memory_check(void)
 	if (0 == tbsize)
 	{
 		MYLOG(0, "no memry leak found and max count allocated so far is %d\n", alsize);
-		free(altbl);
+		mi_free(altbl);
 		alsize = 0;
 	}
 	else
