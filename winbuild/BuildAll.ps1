@@ -100,6 +100,11 @@ function buildPlatform([xml]$configInfo, [string]$Platform)
 		$BUILD_MACROS = $BUILD_MACROS -replace '"', '`"'
 		$macroList = iex "write-output $BUILD_MACROS"
 	}
+
+	# build mimalloc dependency
+	& ${msbuildexe} ..\libs\mimalloc\ide\vs2017\mimalloc.vcxproj /tv:$MSToolsV "/p:Platform=$Platform;Configuration=$Configuration;PlatformToolset=${Toolset}" /t:$target /p:VisualStudioVersion=${VCVersion}
+
+	# build psqlodbc
 	& ${msbuildexe} ./platformbuild.vcxproj /tv:$MSToolsV "/p:Platform=$Platform;Configuration=$Configuration;PlatformToolset=${Toolset}" /t:$target /p:VisualStudioVersion=${VCVersion} /p:DRIVERVERSION=$DRIVERVERSION /p:PG_INC=$PG_INC /p:PG_LIB=$PG_LIB /p:PG_BIN=$PG_BIN $macroList
 }
 
