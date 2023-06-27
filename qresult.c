@@ -100,10 +100,12 @@ QR_set_cursor(QResultClass *self, const char *name)
 	else
 	{
 		self->cursor_name = NULL;
-		
+
 		/*
-		* Free other cursors for SQL Server only, so refcursors do not get freed
-		* prematurely. See commit c07342d22d82ea6293d27057840babfc2ff6d750.
+		* The isSqlServr() check below was added because the code was freeing
+		* cursors prematurely when other results with open cursors exist. The
+		* code was originally added for a scenario using SQL Server linked
+		* servers in commit c07342d22d82ea6293d27057840babfc2ff6d750.
 		*/
 		if (isSqlServr())
 		{

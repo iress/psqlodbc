@@ -108,6 +108,7 @@ int main(int argc, char **argv)
 {
 	setup_procedure();
 
+	/* Using a fetch cache size of 1 to test multiple fetches per cursor */
 	refcursor_test("Fetch=1;FetchRefcursors=0", SQL_AUTOCOMMIT_ON, 2);
 	refcursor_test("Fetch=1;FetchRefcursors=1", SQL_AUTOCOMMIT_ON, 2);
 	refcursor_test("Fetch=1;FetchRefcursors=1", SQL_AUTOCOMMIT_OFF, 0);
