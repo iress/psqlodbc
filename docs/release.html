@@ -9,6 +9,15 @@
 
 <h1>psqlODBC release notes</h1>
 <hr>
+<h2><a id="15.00.0000">psqlODBC 15.00.0000 Release</a></h2>
+Changes:<br />
+<ol type="1">
+<li>Fix a bug that SQLGetDiagField(SQL_DIAG_NUMBER) with SQL_HANDLE_DBC returns SQL_NO_DATA even if an error record exists.</li>
+<li>Fix a typo "RECISION"  which should be "PRECISION".</li>
+<li>Enable SQLColumnPrivileges functionality.</li>
+<li>Currenly SQLColumnPrivileges() call fails. Fix a typo which is the cause.</li>
+<li>Fix a bug that SQLColAttribute returns wrong column name.</li>
+</ol>
 <h2><a id="13.02.0000">psqlODBC 13.02.0000 Release</a></h2>
 Changes:<br />
 <ol type="1">
@@ -101,7 +110,7 @@ Changes:<br />
 <li>Remove tests for abstime type because the type was removed in PG12.</li>
 <li>Update results for PG12's new floating point output format.</li>
 </ol>
-<li>Fix the bug that causes Error : A parameter cannot be found that matches parameter nameÅene'.</li>
+<li>Fix the bug that causes Error : A parameter cannot be found that matches parameter nameÔøΩene'.</li>
 <ol type="a">
 <li>Check BuildResult(the result of drivers build) before building installers.</li>
 <li>Enclose the command part * Find_VSDir $vc_ver * with parentheses so that

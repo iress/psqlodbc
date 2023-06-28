@@ -2321,7 +2321,7 @@ MYLOG(DETAIL_LOG_LEVEL, "!!SC_fetch return =%d\n", ret);
 
 					refcursor_found = TRUE;
 					STR_TO_NAME(self->cursor_name, QR_get_value_backend_text(rhold.first, 0, i));
-					/* Skip NULL refcursors to support a variable number of results */
+					/* Skip NULL refcursors (allows procedure to return a variable number of results) */
 					if (!SC_cursor_is_valid(self))
 						continue;
 
